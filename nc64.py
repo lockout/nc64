@@ -1,9 +1,12 @@
 #!/usr/bin/python3 -tt
 # (C) Bernhards 'Lockout' Blumbergs 2015
+# Version 0.2
 
 import socket
 import sys
 import argparse
+import base64
+from random import randint
 
 
 def send64(data, mode):
@@ -11,7 +14,11 @@ def send64(data, mode):
     Send the specified data to the destination socket
     over IPv6 and IPv4 interchangeably
     """
-    version = 6     # Routine for IP version selection need here
+    r = randint(1, 100)
+    if r % 2 == 0:
+        version = 6
+    else:
+        version = 4
 
     if version == 4:
         host = args.host4
@@ -41,8 +48,14 @@ def send64(data, mode):
             args.interface.encode())
 
         if args.verbose >= 1:
-            print("[*] UDP socket to {0}:{1} via {2}".format(
-                host, port, args.interface))
+            print(
+                "[*] UDP socket to"
+                " {0}:{1} via {2}".format(
+                    host, port, args.interface)
+                )
+
+        if args.base64:
+            data = base64.b64encode(data)
 
         sock.sendto(data, (host, port))     # Send UDP datagram
         if args.verbose >= 2:
@@ -61,7 +74,7 @@ def send64(data, mode):
                 socket.AF_INET6,            # IPv6
                 socket.SOCK_STREAM)         # TCP socket
 
-        socket.SO_BINDTODEVICE = 25     # If not specified by the system
+        socket.SO_BINDTODEVICE = 25         # If not specified by the system
 
         sock.setsockopt(
             socket.SOL_SOCKET,
@@ -69,12 +82,19 @@ def send64(data, mode):
             args.interface.encode())
 
         if args.verbose >= 1:
-            print("[*] Connecting to TCP socket {0}:{1} via {2}".format(
-                host, port, args.interface))
+            print(
+                "[*] Connecting to TCP"
+                " socket {0}:{1} via {2}".format(
+                    host, port, args.interface)
+                )
+
         sock.connect((host, port))
         repl = sock.recv(1024)
         if args.verbose >= 1:
             print("[*] TCP socket connected")
+
+        if args.base64:
+            data = base64.b64encode(data)
 
         sock.send(data)                     # Send TCP stream
         repl = sock.recv(1024)
@@ -87,7 +107,7 @@ def send64(data, mode):
 
 # Command line option parser
 parser = argparse.ArgumentParser(
-    usage="%(prog)s [-tulbh4h6piv]",
+    usage="%(prog)s -[t,u,l,b,h4,h6,p,i,v,b64]",
     description="Pipe data over IPv4 and IPv6")
 
 parser.add_argument(
@@ -104,6 +124,11 @@ parser.add_argument(
     '-l', '--listen',
     action="store_true",
     help="Listen mode")
+
+parser.add_argument(
+    '-b64', '--base64',
+    action="store_true",
+    help="Base64 encode/decode the payload")
 
 parser.add_argument(
     '-b', '--buff',
@@ -156,6 +181,7 @@ host6 = args.host6
 port = args.port
 
 # Main routine
+# Client mode
 if not args.listen:
     if args.verbose >= 1:
         print("[*] Client mode")
@@ -174,7 +200,9 @@ if not args.listen:
             send64(data, 0)
             buff = 0
             data = b""
+    send64(b"", 0)
 
+# Listen mode
 if args.listen:
     if args.verbose >= 1:
         print("[*] Listen mode")
@@ -200,8 +228,10 @@ if args.listen:
 
         if args.verbose >= 2:
             print(
-                "[*] Listening on {0} IPv4:'{1}' IPv6:'{2}' port:{3} protocol:UDP".format(
-                    args.interface, host4, host6, port))
+                "[*] Listening on {0} IPv4:'{1}'"
+                " IPv6:'{2}' port:{3} protocol:UDP".format(
+                    args.interface, host4, host6, port)
+                )
 
         while True:
             data64, addr64 = sock64.recvfrom(buffer_size)
@@ -209,7 +239,9 @@ if args.listen:
             if data64:
                 if args.verbose >= 2:
                     print("[*] Received from {0}".format(addr64))
-                print(data64)
+                if args.base64:
+                    data64 = base64.b64decode(data64)
+                sys.stdout.buffer.write(data64)
 
             if not data64:
                 break
@@ -233,8 +265,10 @@ if args.listen:
 
         if args.verbose >= 2:
             print(
-                "[*] Listening on {0} IPv4:'{1}' IPv6:'{2}' port:{3} protocol:TCP".format(
-                    args.interface, host4, host6, port))
+                "[*] Listening on {0} IPv4:'{1}'"
+                " IPv6:'{2}' port:{3} protocol:TCP".format(
+                    args.interface, host4, host6, port)
+                )
 
         while True:
             conn64, addr64 = sock64.accept()
@@ -243,7 +277,9 @@ if args.listen:
             if data64:
                 if args.verbose >= 2:
                     print("[*] Received from {0}".format(addr64))
-                print(data64)
+                if args.base64:
+                    data64 = base64.b64decode(data64)
+                sys.stdout.buffer.write(data64)
 
             if not data64:
                 break
