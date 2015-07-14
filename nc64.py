@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -tt
-# (C) Bernhards 'Lockout' Blumbergs 2015
-# Version 0.2
+# (C) 2015 Bernhards 'Lockout' Blumbergs
+# Version 0.3
 
 import socket
 import sys
@@ -14,9 +14,9 @@ def send64(data, mode):
     Send the specified data to the destination socket
     over IPv6 and IPv4 interchangeably
     """
-    r = randint(1, 100)
-    if r % 2 == 0:
-        version = 6
+    r = randint(1, 100)             # Choose between IPv4 and IPv6
+    if r % 2 == 0:                  # TODO: Update the selection
+        version = 6                 # algorithm needed
     else:
         version = 4
 
@@ -89,7 +89,6 @@ def send64(data, mode):
                 )
 
         sock.connect((host, port))
-        repl = sock.recv(1024)
         if args.verbose >= 1:
             print("[*] TCP socket connected")
 
@@ -97,7 +96,6 @@ def send64(data, mode):
             data = base64.b64encode(data)
 
         sock.send(data)                     # Send TCP stream
-        repl = sock.recv(1024)
         if args.verbose >= 2:
             print("[*] Buffer sent:", data)
 
