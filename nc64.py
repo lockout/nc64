@@ -7,6 +7,7 @@ import sys
 import argparse
 import base64
 from random import randint
+from time import sleep
 
 
 def send64(data, mode):
@@ -100,12 +101,20 @@ def send64(data, mode):
             print("[*] Buffer sent:", data)
 
         sock.close()
+
+        if args.timing == 1:
+            sleep(30)                       # Sneaky
+        elif args.timing == 2:
+            sleep(15)                       # Polite
+        elif args.timing >= 3:
+            sleep(0.3)                      # Agressive
+
         return(True)                        # Send success
 
 
 # Command line option parser
 parser = argparse.ArgumentParser(
-    usage="%(prog)s -[t,u,l,b,h4,h6,p,i,v,b64]",
+    usage="%(prog)s -[t,u,l,b,h4,h6,p,i,v,b64,T]",
     description="Pipe data over IPv4 and IPv6")
 
 parser.add_argument(
@@ -169,6 +178,12 @@ parser.add_argument(
     action="count",
     default=0,
     help="Increase verbosity")
+
+parser.add_argument(
+    '-T', '--timing',
+    action="count",
+    default=3,
+    help="Session delay timing 0-3. Default = 3")
 
 args = parser.parse_args()
 
