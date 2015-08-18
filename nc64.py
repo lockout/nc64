@@ -101,16 +101,33 @@ def send64(data, mode):
             print("[*] Buffer sent:", data)
 
         sock.close()
-
-        if args.timing == 1:
-            sleep(30)                       # Sneaky
-        elif args.timing == 2:
-            sleep(15)                       # Polite
-        elif args.timing >= 3:
-            sleep(0.3)                      # Agressive
-
         return(True)                        # Send success
 
+def wait():
+    """
+    Session timing (seconds)
+    """
+    if args.timing == 0:
+        if args.verbose >= 2:
+            print("[*] Insane send")
+        sleep(0.15)                          # Insane
+    if args.timing == 1:
+        if args.verbose >= 2:
+            print("[*] Agressive send")
+        sleep(3)                            # Agressive
+    elif args.timing == 2:
+        if args.verbose >= 2:
+            print("[*] Polite send")
+        sleep(15)                           # Polite
+    elif args.timing == 3:
+        if args.verbose >= 2:
+            print("[*] Sneaky send")
+        sleep(30)                           # Sneaky
+    elif args.timing >= 4:
+        if args.verbose >= 2:
+            print("[*] Paranoid send")
+        sleep(300)                          # Paranoid
+    return(True)
 
 # Command line option parser
 parser = argparse.ArgumentParser(
@@ -125,7 +142,7 @@ parser.add_argument(
 parser.add_argument(
     '-u', '--udp',
     action="store_true",
-    help="Use UDP. Default")
+    help="Use UDP. Default: udp")
 
 parser.add_argument(
     '-l', '--listen',
@@ -159,19 +176,19 @@ parser.add_argument(
     '-p', '--port',
     type=int,
     default=443,
-    help="Destination or listen port. Default = 443")
+    help="Destination or listen port. Default: 443")
 
 parser.add_argument(
     '-s', '--sport',
     type=int,
     default=443,
-    help="Source port. Default = 443")
+    help="Source port. Default: 443")
 
 parser.add_argument(
     '-i', '--interface',
     type=str,
     default="eth0",
-    help="Network interface")
+    help="Network interface. Default: eth0")
 
 parser.add_argument(
     '-v', '--verbose',
@@ -182,8 +199,8 @@ parser.add_argument(
 parser.add_argument(
     '-T', '--timing',
     action="count",
-    default=3,
-    help="Session delay timing 0-3. Default = 3")
+    default=0,
+    help="Session delay timing 0-4. Default: 0")
 
 args = parser.parse_args()
 
@@ -211,9 +228,11 @@ if not args.listen:
         buff += 1
         if buff == buffer_size:
             send64(data, 0)
+            wait()
             buff = 0
             data = b""
-    send64(b"", 0)
+
+    send64(b"", 0)                              # End of transmission
 
 # Listen mode
 if args.listen:
