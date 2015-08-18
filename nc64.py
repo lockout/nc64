@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
-# Version 0.5
+__version__ = "0.5/Audrey"
 
 import socket
 import sys
@@ -220,7 +220,16 @@ parser.add_argument(
     default=0,
     help="Session delay timing 0-4. Default: 0")
 
+parser.add_argument(
+    '-V', '--version',
+    action="store_true",
+    help="Print version")
+
 args = parser.parse_args()
+
+if args.version:
+    print("Version: ", __version__)
+    sys.exit(0)
 
 # Program variables
 buffer_size = args.buff
