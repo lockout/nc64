@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
-# Version 0.3
+# Version 0.5
 
 import socket
 import sys
@@ -8,6 +8,7 @@ import argparse
 import base64
 from random import randint
 from time import sleep
+from math import ceil
 
 
 def send64(data, mode):
@@ -57,10 +58,18 @@ def send64(data, mode):
 
         if args.base64:
             data = base64.b64encode(data)
+            if args.verbose >= 3:
+                print(
+                    "[D] Base64 decoded data {0} bytes:\n{1}".format(
+                        len(base64.b64decode(data)), base64.b64decode(data))
+                    )
 
         sock.sendto(data, (host, port))     # Send UDP datagram
         if args.verbose >= 2:
-            print("[*] Buffer sent:", data)
+            print(
+                "[*] Buffer {0} bytes sent:\n{1}".format(
+                    len(data), data)
+                )
 
         sock.close()
         return(True)                        # Send success
@@ -95,13 +104,22 @@ def send64(data, mode):
 
         if args.base64:
             data = base64.b64encode(data)
+            if args.verbose >= 3:
+                print(
+                    "[D] Base64 decoded data {0} bytes:\n{1}".format(
+                        len(base64.b64decode(data)), base64.b64decode(data))
+                    )
 
         sock.send(data)                     # Send TCP stream
         if args.verbose >= 2:
-            print("[*] Buffer sent:", data)
+            print(
+                "[*] Buffer {0} bytes sent:\n{1}".format(
+                    len(data), data)
+                )
 
         sock.close()
         return(True)                        # Send success
+
 
 def wait():
     """
@@ -131,8 +149,8 @@ def wait():
 
 # Command line option parser
 parser = argparse.ArgumentParser(
-    usage="%(prog)s -[t,u,l,b,h4,h6,p,i,v,b64,T]",
-    description="Pipe data over IPv4 and IPv6")
+    description="Exfiltrate data over IPv4 and IPv6 sessions",
+    )
 
 parser.add_argument(
     '-t', '--tcp',
@@ -239,6 +257,9 @@ if args.listen:
     if args.verbose >= 1:
         print("[*] Listen mode")
 
+    if args.base64:
+        buffer_size = ceil(buffer_size * 1.5)    # Increase receive buffer size
+
     if not args.udp and not args.tcp:
         if args.verbose >= 2:
             print("[*] Defaulting to UDP protocol")
@@ -272,6 +293,11 @@ if args.listen:
                 if args.verbose >= 2:
                     print("[*] Received from {0}".format(addr64))
                 if args.base64:
+                    if args.verbose >= 3:
+                        print(
+                            "[D] Base64 encoded data {0} bytes:\n{1}".format(
+                                len(data64), data64)
+                            )
                     data64 = base64.b64decode(data64)
                 sys.stdout.buffer.write(data64)
 
@@ -310,6 +336,11 @@ if args.listen:
                 if args.verbose >= 2:
                     print("[*] Received from {0}".format(addr64))
                 if args.base64:
+                    if args.verbose >= 3:
+                        print(
+                            "[D] Base64 encoded data {0} bytes:\n{1}".format(
+                                len(data64), data64)
+                            )
                     data64 = base64.b64decode(data64)
                 sys.stdout.buffer.write(data64)
 
