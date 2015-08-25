@@ -63,9 +63,9 @@ def send64(data, mode):
                     )
 
         sock.sendto(data, (host, port))     # Send UDP datagram
-        if args.verbose >= 2:
+        if args.verbose >= 3:
             print(
-                "[+] Buffer {0} bytes sent:\n{1}".format(
+                "[D] Buffer {0} bytes sent:\n{1}".format(
                     len(data), data)
                 )
 
@@ -108,29 +108,29 @@ def send64(data, mode):
                         len(base64.b64decode(data)), base64.b64decode(data))
                     )
 
-        sock.send(data)                     # Send TCP stream
-        if args.verbose >= 2:
+        sock.send(data)                        # Send TCP stream
+        if args.verbose >= 3:
             print(
-                "[+] Buffer {0} bytes sent:\n{1}".format(
+                "[D] Buffer {0} bytes sent:\n{1}".format(
                     len(data), data)
                 )
 
         sock.close()
-        return(True)                        # Send success
+        return(True)                            # Send success
 
 
-def ip_version(sel_type):                   # TODO: Session tracking
+def ip_version(sel_type):
     """
     IP version selection algorithms
     """
-    random.seed(a=urandom(100))             # Initialize seed urandom
-    if sel_type == 0:                       # Random odd selection
+    random.seed(a=urandom(100))                 # Initialize seed urandom
+    if sel_type == 0:                           # Random odd selection
         r = random.randint(1, 100)
         if r % 2 == 0:
             version = 6
         else:
             version = 4
-    elif sel_type == 1:                     # Random selection
+    elif sel_type == 1:                         # Random selection
         version = random.sample([4, 6], 1)[0]
     elif sel_type == 2:
         version = random.choice([4, 6])
@@ -144,10 +144,37 @@ def ip_version(sel_type):                   # TODO: Session tracking
     elif sel_type == 6:                         # IPv6 only
         version = 6
 
-#    if version == 6:                           # Session tracking
-#        ip6_sessions += 1
-#    if version == 4:
-#        ip4_sessions += 1
+    global ip6_sessions_total                   # Session tracking
+    global ip4_sessions_total
+    global ip6_sessions
+    global ip4_sessions
+    if version == 6:
+        ip6_sessions += 1
+        ip6_sessions_total += 1
+    if version == 4:
+        ip4_sessions += 1
+        ip4_sessions_total += 1
+
+    if ip6_sessions > args.max_subsequent_sessions:
+        version = 4
+        ip6_sessions = 0
+        ip4_sessions = 1
+        if args.verbose >= 2:
+            print(
+                "[+] Maximum number of subsequent {0}"
+                " IPv6 sessios reached".format(
+                    args.max_subsequent_sessions)
+                )
+    if ip4_sessions > args.max_subsequent_sessions:
+        version = 6
+        ip4_sessions = 0
+        ip6_sessions = 1
+        if args.verbose >= 2:
+            print(
+                "[+] Maximum number of subsequent {0}"
+                " IPv4 sessios reached".format(
+                    args.max_subsequent_sessions)
+                )
 
     return(version)
 
@@ -160,23 +187,23 @@ def wait():
         if args.timing == 0:
             sleep_time = 0.15                   # Insane
             if args.verbose >= 2:
-                print("[+] Insane send")
+                print("[+] Insane send at {0}s".format(sleep_time))
         elif args.timing == 1:
             sleep_time = 3                      # Agressive
             if args.verbose >= 2:
-                print("[+] Agressive send")
+                print("[+] Agressive send at {0}s".format(sleep_time))
         elif args.timing == 2:
             sleep_time = 15                     # Polite
             if args.verbose >= 2:
-                print("[+] Polite send")
+                print("[+] Polite send at {0}s".format(sleep_time))
         elif args.timing == 3:
             sleep_time = 30                     # Sneaky
             if args.verbose >= 2:
-                print("[+] Sneaky send")
+                print("[+] Sneaky send at {0}s".format(sleep_time))
         elif args.timing >= 4:
             sleep_time = 300                    # Paranoid
             if args.verbose >= 2:
-                print("[+] Paranoid send")
+                print("[+] Paranoid send at {0}s".format(sleep_time))
     if args.timing_set >= 0:                    # Custom timing
         sleep_time = args.timing_set
         if args.verbose >= 2:
@@ -212,7 +239,7 @@ parser.add_argument(
 parser.add_argument(
     '-l', '--listen',
     action="store_true",
-    help="Listen mode")
+    help="Listen (server) mode. Default: send (client)")
 
 parser.add_argument(
     '-b64', '--base64',
@@ -220,7 +247,7 @@ parser.add_argument(
     help="Base64 encode/decode the payload")
 
 parser.add_argument(
-    '-b', '--buff',
+    '-b', '--buffer',
     type=int,
     default=500,
     help="Buffer size. Default: 500")
@@ -243,17 +270,11 @@ parser.add_argument(
     default=443,
     help="Destination or listen port. Default: 443")
 
-parser.add_argument(
+parser.add_argument(                             # TODO: Implement source port
     '-s', '--sport',
     type=int,
     default=443,
-    help="Source port. Default: 443")
-
-parser.add_argument(
-    '--ip_version_select',
-    type=int,
-    default=0,
-    help="Choose random IP version selection approach")
+    help="Source port. Default: 443. Not implemented yet")
 
 parser.add_argument(
     '-i', '--interface',
@@ -274,7 +295,7 @@ parser.add_argument(
     help="Session delay timing level 0-4. Default: 1")
 
 parser.add_argument(
-    '-TR', '--timing_randomize',
+    '--timing_randomize',
     action="store_true",
     help="Randomize session delay timing. Default: False")
 
@@ -283,6 +304,18 @@ parser.add_argument(
     type=int,
     default=-1,
     help="Set custom timing. Default: Disabled")
+
+parser.add_argument(
+    '--ip_version_select',
+    type=int,
+    default=0,
+    help="Choose random IP version selection approach")
+
+parser.add_argument(
+    '--max_subsequent_sessions',
+    type=int,
+    default=3,
+    help="Maxmimum number of subsequent sessions of same IP version")
 
 parser.add_argument(
     '-V', '--version',
@@ -296,10 +329,15 @@ if args.version:
     sys.exit(0)
 
 # Program variables
-buffer_size = args.buff
+buffer_size = args.buffer
 host4 = args.host4
 host6 = args.host6
 port = args.port
+ip6_sessions = 0
+ip4_sessions = 0
+ip6_sessions_total = 0
+ip4_sessions_total = 0
+
 
 # Main routine
 # Client mode
@@ -325,6 +363,14 @@ if not args.listen:
 
     send64(b"", 0)                              # End of transmission
                                                 # Can be profiled?
+    if args.verbose >= 1:
+        print(
+            "[*] SUMMARY: IPv4 sessions: {0}, IPv6 sessions: {1}, "
+            "Total sessions: {2}".format(
+                ip4_sessions_total, ip6_sessions_total,
+                ip4_sessions_total + ip6_sessions_total)
+            )
+
 # Listen mode
 if args.listen:
     if args.verbose >= 1:
