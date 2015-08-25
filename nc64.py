@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
 
-__version__ = "0.6/Bridgette"
+__version__ = "0.61/Bridgette"
 
 import socket
 import sys
@@ -33,14 +33,14 @@ def send64(data, mode):
     if args.udp:
         if version == 4:
             sock = socket.socket(
-                socket.AF_INET,         # IPv4
-                socket.SOCK_DGRAM)      # UDP socket
+                socket.AF_INET,             # IPv4
+                socket.SOCK_DGRAM)          # UDP socket
         if version == 6:
             sock = socket.socket(
-                socket.AF_INET6,        # IPv6
-                socket.SOCK_DGRAM)      # UDP socket
+                socket.AF_INET6,            # IPv6
+                socket.SOCK_DGRAM)          # UDP socket
 
-        socket.SO_BINDTODEVICE = 25     # If not specified by the system
+        socket.SO_BINDTODEVICE = 25         # If not specified by the system
 
         sock.setsockopt(
             socket.SOL_SOCKET,
@@ -119,9 +119,8 @@ def send64(data, mode):
         return(True)                        # Send success
 
 
-def ip_version(sel_type):                   # TODO: Successive session
-                                            # tracking needs to be implemented
-    """                                     
+def ip_version(sel_type):                   # TODO: Session tracking
+    """
     IP version selection algorithms
     """
     random.seed(a=urandom(100))             # Initialize seed urandom
@@ -135,10 +134,21 @@ def ip_version(sel_type):                   # TODO: Successive session
         version = random.sample([4, 6], 1)[0]
     elif sel_type == 2:
         version = random.choice([4, 6])
-    elif sel_type == 4:                     # IPv4 only
+    elif sel_type == 3:
+        if random.random() >= 0.5:
+            version = 6
+        else:
+            version = 4
+    elif sel_type == 4:                         # IPv4 only
         version = 4
-    elif sel_type == 6:                     # IPv6 only
+    elif sel_type == 6:                         # IPv6 only
         version = 6
+
+#    if version == 6:                           # Session tracking
+#        ip6_sessions += 1
+#    if version == 4:
+#        ip4_sessions += 1
+
     return(version)
 
 
@@ -148,26 +158,26 @@ def wait():
     """
     if args.timing_set == -1:
         if args.timing == 0:
-            sleep_time = 0.15               # Insane
+            sleep_time = 0.15                   # Insane
             if args.verbose >= 2:
                 print("[+] Insane send")
         elif args.timing == 1:
-            sleep_time = 3                  # Agressive
+            sleep_time = 3                      # Agressive
             if args.verbose >= 2:
                 print("[+] Agressive send")
         elif args.timing == 2:
-            sleep_time = 15                 # Polite
+            sleep_time = 15                     # Polite
             if args.verbose >= 2:
                 print("[+] Polite send")
         elif args.timing == 3:
-            sleep_time = 30                 # Sneaky
+            sleep_time = 30                     # Sneaky
             if args.verbose >= 2:
                 print("[+] Sneaky send")
         elif args.timing >= 4:
-            sleep_time = 300                # Paranoid
+            sleep_time = 300                    # Paranoid
             if args.verbose >= 2:
                 print("[+] Paranoid send")
-    if args.timing_set >= 0:                # Custom timing
+    if args.timing_set >= 0:                    # Custom timing
         sleep_time = args.timing_set
         if args.verbose >= 2:
             print(
