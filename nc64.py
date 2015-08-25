@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
 
-__version__ = "0.61/Bridgette"
+__version__ = "0.62/Bridgette"
 
 import socket
 import sys
@@ -47,6 +47,9 @@ def send64(data, mode):
             socket.SO_BINDTODEVICE,
             args.interface.encode())
 
+        if args.source_port:
+            sock.bind(('', args.source_port))   # TODO
+
         if args.verbose >= 1:
             print(
                 "[*] IPv{0} UDP socket to"
@@ -88,6 +91,9 @@ def send64(data, mode):
             socket.SOL_SOCKET,
             socket.SO_BINDTODEVICE,
             args.interface.encode())
+
+        if args.source_port:
+            sock.bind(('', args.source_port))   # TODO: TCP port unbinding
 
         if args.verbose >= 1:
             print(
@@ -274,12 +280,6 @@ parser.add_argument(
     default=443,
     help="Destination or listen port. Default: 443")
 
-parser.add_argument(                             # TODO: Implement source port
-    '-s', '--sport',
-    type=int,
-    default=443,
-    help="Source port. Default: 443. Not implemented yet")
-
 parser.add_argument(
     '-i', '--interface',
     type=str,
@@ -297,6 +297,11 @@ parser.add_argument(
     type=int,
     default=1,
     help="Session delay timing level 0-4. Default: 1")
+
+parser.add_argument(                             # TODO: Implement source port
+    '-s', '--source_port',
+    type=int,
+    help="Specify source port")
 
 parser.add_argument(
     '--timing_randomize',
