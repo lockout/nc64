@@ -159,6 +159,8 @@ def ip_version(sel_type):
         version = 4
         ip6_sessions = 0
         ip4_sessions = 1
+        ip6_sessions_total -= 1
+        ip4_sessions_total += 1
         if args.verbose >= 2:
             print(
                 "[+] Maximum number of subsequent {0}"
@@ -169,6 +171,8 @@ def ip_version(sel_type):
         version = 6
         ip4_sessions = 0
         ip6_sessions = 1
+        ip4_sessions_total -= 1
+        ip6_sessions_total += 1
         if args.verbose >= 2:
             print(
                 "[+] Maximum number of subsequent {0}"
