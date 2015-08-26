@@ -47,8 +47,8 @@ def send64(data, mode):
             socket.SO_BINDTODEVICE,
             args.interface.encode())
 
-        if args.source_port:
-            sock.bind(('', args.source_port))   # TODO
+        if args.source_port:                    # Set UDP source port
+            sock.bind(('', args.source_port))   # TODO: Set source IPv4/6
 
         if args.verbose >= 1:
             print(
@@ -92,8 +92,17 @@ def send64(data, mode):
             socket.SO_BINDTODEVICE,
             args.interface.encode())
 
-        if args.source_port:
-            sock.bind(('', args.source_port))   # TODO: TCP port unbinding
+        try:
+            if args.source_port:                    # Set TCP source port
+                sock.bind(('', args.source_port))   # TODO: Set source IPv4/6
+        except OSError as error:                    # TODO: TCP socket reuse
+            if args.verbose >= 3:
+                print("[!] {0}".format(error))
+            sock.setsockopt(
+                socket.SOL_SOCKET,
+                socket.SO_REUSEADDR,
+                1)
+            #sock.bind(('', args.source_port))
 
         if args.verbose >= 1:
             print(
