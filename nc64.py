@@ -305,6 +305,11 @@ parser.add_argument(
     help="Increase verbosity")
 
 parser.add_argument(
+    '--show_stat',
+    action="store_true",
+    help="Show exfiltration statistics. On if verbosity used")
+
+parser.add_argument(
     '-T', '--timing',
     type=int,
     default=1,
@@ -387,7 +392,7 @@ if not args.listen:
 
     send64(b"", 0)                              # End of transmission
     end_time = time()                           # Can be profiled?
-    if args.verbose >= 1:
+    if args.verbose >= 1 or args.show_stat:
         print(
             "[*] SUMMARY: IPv4 sessions: {0}, IPv6 sessions: {1}, "
             "Total sessions: {2}, Data: {3}B, Time: {4: .2f}s".format(
