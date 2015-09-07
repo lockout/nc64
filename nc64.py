@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
 # See LICENSE file for usage conditions
-__version__ = "0.62/Bridgette"
+__version__ = "0.63/Bridgette"
 
 import socket
 import sys
@@ -9,7 +9,7 @@ import argparse
 import base64
 import random
 from os import urandom
-from time import sleep
+from time import sleep, time
 from math import ceil
 
 
@@ -18,6 +18,7 @@ def send64(data, mode):
     Send the specified data to the destination socket
     over IPv6 and IPv4 interchangeably
     """
+    global data_sent
     version = ip_version(args.ip_version_select)
 
     if version == 4:
@@ -66,6 +67,7 @@ def send64(data, mode):
                     )
 
         sock.sendto(data, (host, port))     # Send UDP datagram
+        data_sent += len(data)
         if args.verbose >= 3:
             print(
                 "[D] Buffer {0} bytes sent:\n{1}".format(
@@ -124,6 +126,7 @@ def send64(data, mode):
                     )
 
         sock.send(data)                        # Send TCP stream
+        data_sent += len(data)
         if args.verbose >= 3:
             print(
                 "[D] Buffer {0} bytes sent:\n{1}".format(
@@ -356,6 +359,7 @@ ip6_sessions = 0
 ip4_sessions = 0
 ip6_sessions_total = 0
 ip4_sessions_total = 0
+data_sent = 0
 
 
 # Main routine
@@ -364,6 +368,7 @@ if not args.listen:
     if args.verbose >= 1:
         print("[*] Client mode")
 
+    start_time = time()
     buff = 0
     read_data = b""
     data = b""
@@ -381,13 +386,15 @@ if not args.listen:
             data = b""
 
     send64(b"", 0)                              # End of transmission
-                                                # Can be profiled?
+    end_time = time()                           # Can be profiled?
     if args.verbose >= 1:
         print(
             "[*] SUMMARY: IPv4 sessions: {0}, IPv6 sessions: {1}, "
-            "Total sessions: {2}".format(
+            "Total sessions: {2}, Data: {3}B, Time: {4: .2f}s".format(
                 ip4_sessions_total, ip6_sessions_total,
-                ip4_sessions_total + ip6_sessions_total)
+                ip4_sessions_total + ip6_sessions_total,
+                data_sent,
+                end_time - start_time)
             )
 
 # Listen mode
