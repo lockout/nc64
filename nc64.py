@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
-
+# See LICENSE file for usage conditions
 __version__ = "0.62/Bridgette"
 
 import socket
