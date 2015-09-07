@@ -324,7 +324,8 @@ parser.add_argument(
     '--max_subsequent_sessions',
     type=int,
     default=3,
-    help="Maxmimum number of subsequent sessions of same IP version")
+    help="Maxmimum number of subsequent sessions of same IP version."
+    " Default: 3")
 
 parser.add_argument(
     '-V', '--version',
