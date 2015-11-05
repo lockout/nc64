@@ -76,8 +76,8 @@ def send64(data, mode):
             IPaddress = args.source_ip6
 
         if SourcePort and not IPaddress:        # TODO: Binding problems!
-            sock.bind(('', SourcePort))
-        if IPaddress and not SourcePort:
+            sock.bind(('', SourcePort))         # Currently works only
+        if IPaddress and not SourcePort:        # for ports
             sock.bind((IPaddress))
         if IPaddress and SourcePort:
             sock.bind((IPaddress, SourcePort))
@@ -539,8 +539,8 @@ if args.listen:
                 sys.stdout.buffer.write(data64)
             else:
                 if args.keepalive:              # TODO: Fix data output!
-                    continue
-                else:                           # no data64
+                    continue                    # data not output to stderr
+                else:
                     break
 
         sock64.close()
@@ -548,7 +548,7 @@ if args.listen:
         if args.show_stat or args.verbose >= 1:
             if args.hashing:
                 print(
-                    "[+] Exfiltrated data hash sum: {0}".format(
+                    "\n[+] Exfiltrated data hash sum: {0}".format(
                         hex(hash_sum))
                     )
 
@@ -600,8 +600,8 @@ if args.listen:
                 sys.stdout.buffer.write(data64)
             else:
                 if args.keepalive:              # TODO: Fix data output!
-                    continue
-                else:                           # no data64
+                    continue                    # data not output to stderr
+                else:
                     break
 
         sock64.close()
@@ -609,6 +609,6 @@ if args.listen:
         if args.show_stat or args.verbose >= 1:
             if args.hashing:
                 print(
-                    "[+] Exfiltrated data hash sum: {0}".format(
+                    "\n[+] Exfiltrated data hash sum: {0}".format(
                         hex(hash_sum))
                     )
