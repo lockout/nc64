@@ -1,17 +1,22 @@
 #!/usr/bin/python3 -tt
 # (C) 2015 Bernhards 'Lockout' Blumbergs
 # See LICENSE file for usage conditions
-__version__ = "0.7/Camryn"
+__version__ = "0.71/Camryn"
 
 import socket
 import sys
 import argparse
 import base64
 import random
+import signal
 from os import urandom
 from time import sleep, time
 from math import ceil
 from hashlib import md5
+
+
+def signal_handler(signal, frame):
+    sys.exit(0)
 
 
 def hashsum(data):
@@ -59,8 +64,23 @@ def send64(data, mode):
             socket.SO_BINDTODEVICE,
             args.interface.encode())
 
-        if args.source_port:                    # Set UDP source port
-            sock.bind(('', args.source_port))   # TODO: Set source IPv4/6
+        SourcePort = None
+        IPaddress = None
+        if args.source_port:                    # Set UDP source IP:port
+            SourcePort = args.source_port
+        if args.randomize_source_port:
+            SourcePort = random.randint(1024, 65535)
+        if args.source_ip4 and version == 4:
+            IPaddress = args.source_ip4
+        if args.source_ip6 and version == 6:
+            IPaddress = args.source_ip6
+
+        if SourcePort and not IPaddress:        # TODO: Binding problems!
+            sock.bind(('', SourcePort))
+        if IPaddress and not SourcePort:
+            sock.bind((IPaddress))
+        if IPaddress and SourcePort:
+            sock.bind((IPaddress, SourcePort))
 
         if args.verbose >= 1:
             print(
@@ -342,10 +362,30 @@ parser.add_argument(
     default=1,
     help="Session delay timing level 0-4. Default: 1")
 
-parser.add_argument(                             # TODO: Implement source port
-    '-s', '--source_port',
+parser.add_argument(                            # TODO: Implement TCP
+    '-sp', '--source_port',                     # source port
     type=int,
-    help="Specify source port")
+    help="Specify source port. UDP only")
+
+parser.add_argument(
+    '--randomize_source_port',
+    action="store_true",
+    help="Randomize source port. Default:1024-65535")
+
+parser.add_argument(
+    '-sip4', '--source_ip4',
+    type=str,
+    help="Specify source IPv4. UDP only")
+
+parser.add_argument(
+    '-sip6', '--source_ip6',
+    type=str,
+    help="Specify source IPv6. UDP only")
+
+parser.add_argument(
+    '-k', '--keepalive',
+    action="store_true",
+    help="Keep the listener alive. Default: False")
 
 parser.add_argument(
     '--timing_randomize',
@@ -442,6 +482,8 @@ if not args.listen:
 
 # Listen mode
 if args.listen:
+    signal.signal(signal.SIGINT, signal_handler)    # Terminate on Crl+C
+
     if args.verbose >= 1:
         print("[*] Listen mode")
 
@@ -479,11 +521,11 @@ if args.listen:
 
             if data64:
                 if args.verbose >= 2:
-                    print("[+] Received from {0}".format(addr64))
+                    print("\n[+] Received from {0}".format(addr64))
                 if args.base64:
                     if args.verbose >= 3:
                         print(
-                            "[D] Base64 encoded data {0} bytes:\n{1}".format(
+                            "\n[D] Base64 encoded data {0} bytes:\n{1}".format(
                                 len(data64), data64)
                             )
                     data64 = base64.b64decode(data64)
@@ -491,19 +533,19 @@ if args.listen:
                     hashsum(data64)
                     if args.verbose >= 2:
                         print(
-                            "[+] Data block hash sum: {0}".format(
+                            "\n[+] Data block hash sum: {0}".format(
                                 hex(hash_sum))
                             )
-
                 sys.stdout.buffer.write(data64)
-
-            if not data64:
-                break
+            else:
+                if args.keepalive:              # TODO: Fix data output!
+                    continue
+                else:                           # no data64
+                    break
 
         sock64.close()
 
         if args.show_stat or args.verbose >= 1:
-            print("[*] SUMMARY:")
             if args.hashing:
                 print(
                     "[+] Exfiltrated data hash sum: {0}".format(
@@ -538,12 +580,12 @@ if args.listen:
 
             if data64:
                 if args.verbose >= 2:
-                    print("[+] Received from {0}".format(addr64))
+                    print("\n[+] Received from {0}".format(addr64))
 
                 if args.base64:
                     if args.verbose >= 3:
                         print(
-                            "[D] Base64 encoded data {0} bytes:\n{1}".format(
+                            "\n[D] Base64 encoded data {0} bytes:\n{1}".format(
                                 len(data64), data64)
                             )
                     data64 = base64.b64decode(data64)
@@ -551,19 +593,20 @@ if args.listen:
                     hashsum(data64)
                     if args.verbose >= 2:
                         print(
-                            "[+] Data block hash sum: {0}".format(
+                            "\n[+] Data block hash sum: {0}".format(
                                 hex(hash_sum))
                             )
 
                 sys.stdout.buffer.write(data64)
-
-            if not data64:
-                break
+            else:
+                if args.keepalive:              # TODO: Fix data output!
+                    continue
+                else:                           # no data64
+                    break
 
         sock64.close()
 
         if args.show_stat or args.verbose >= 1:
-            print("[*] SUMMARY:")
             if args.hashing:
                 print(
                     "[+] Exfiltrated data hash sum: {0}".format(
