@@ -1,7 +1,23 @@
 #!/usr/bin/python3 -tt
+# -*- coding: utf-8 -*-
+#
 # (C) 2015 Bernhards 'Lockout' Blumbergs
 # See LICENSE file for usage conditions
-__version__ = "0.71/Camryn"
+#
+# Known issues:
+# 1. TCP socket reuse problems once the socket has been closed
+# 2. UDP socket spoofing, port reuse problems
+# 3. Keepalive does not print out the previous buffer befoe new one is received
+# 4. When sending UDP datagrams as fast as possible they do not arrive at the
+# destination (of course). If file is being reassembled, EOF is not received
+# 5. Performance degradation when hashing is used (of course)
+#
+# To be implemented:
+# 1. Payload XOR encryption with shared key
+# 2. SSL handshake for SSH, HTTPS traffic spofing
+# 3. Logging instead of printing verbose messages on the screen
+# 4. Multiple IPv6 destination addresses as list for random selection
+__version__ = "0.71/Devon"
 
 import socket
 import sys
