@@ -17,7 +17,7 @@
 # 2. SSL handshake for SSH, HTTPS traffic spofing
 # 3. Logging instead of printing verbose messages on the screen
 # 4. Multiple IPv6 destination addresses as list for random selection
-__version__ = "0.71/Devon"
+__version__ = "0.72/Devon"
 
 import socket
 import sys
@@ -222,8 +222,10 @@ def ip_version(sel_type):
             version = 4
     elif sel_type == 4:                         # IPv4 only
         version = 4
+        ipv4_only = True
     elif sel_type == 6:                         # IPv6 only
         version = 6
+        ipv6_only = True
 
     global ip6_sessions_total                   # Session tracking
     global ip4_sessions_total
@@ -236,7 +238,7 @@ def ip_version(sel_type):
         ip4_sessions += 1
         ip4_sessions_total += 1
 
-    if ip6_sessions > args.max_subsequent_sessions:
+    if ip6_sessions > args.max_subsequent_sessions and not ipv6_only:
         version = 4
         ip6_sessions = 0
         ip4_sessions = 1
@@ -248,7 +250,7 @@ def ip_version(sel_type):
                 " IPv6 sessios reached".format(
                     args.max_subsequent_sessions)
                 )
-    if ip4_sessions > args.max_subsequent_sessions:
+    if ip4_sessions > args.max_subsequent_sessions and not ipv4_only:
         version = 6
         ip4_sessions = 0
         ip6_sessions = 1
