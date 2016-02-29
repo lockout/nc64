@@ -13,10 +13,11 @@
 # 5. Performance degradation when hashing is used (of course)
 #
 # To be implemented:
-# 1. Payload XOR encryption with shared key
-# 2. SSL handshake for SSH, HTTPS traffic spofing
-# 3. Logging instead of printing verbose messages on the screen
-# 4. Multiple IPv6 destination addresses as list for random selection
+# 1. Payload XOR encryption with a shared key
+# 2. SSL signing and handshake for SSH, HTTPS traffic spoofing
+# 3. Custom SSL certificate provision
+# 4. Logging instead of printing verbose messages on the screen
+# 5. Multiple IPv6 destination addresses as list for random selection
 __version__ = "0.72/Devon"
 
 import socket
@@ -93,7 +94,7 @@ def send64(data, mode):
 
         if SourcePort and not IPaddress:        # TODO: Binding problems!
             sock.bind(('', SourcePort))         # Currently works only
-        if IPaddress and not SourcePort:        # for ports
+        if IPaddress and not SourcePort:        # for ports and not IPs
             sock.bind((IPaddress))
         if IPaddress and SourcePort:
             sock.bind((IPaddress, SourcePort))
