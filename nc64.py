@@ -206,6 +206,8 @@ def ip_version(sel_type):
     IP version selection algorithms
     """
     random.seed(a=urandom(100))                 # Initialize seed urandom
+    ipv4_only = False
+    ipv6_only = False
     if sel_type == 0:                           # Random odd selection
         r = random.randint(1, 100)
         if r % 2 == 0:
