@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -tt
 # -*- coding: utf-8 -*-
 #
-# (C) 2015 Bernhards 'Lockout' Blumbergs
+# (C) 2016 Bernhards 'Lockout' Blumbergs
 # See LICENSE file for usage conditions
 #
 # Known issues:
@@ -18,7 +18,7 @@
 # 3. Custom SSL certificate provision
 # 4. Logging instead of printing verbose messages on the screen
 # 5. Multiple IPv6 destination addresses as list for random selection
-__version__ = "0.72/Devon"
+__version__ = "0.72.1/Devon"
 
 import socket
 import sys
